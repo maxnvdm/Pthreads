@@ -38,7 +38,35 @@ void* Thread_Main(void* Parameter){
  return 0;
 }
 //------------------------------------------------------------------------------
+void swap(int *xp, int *yp) 
+{ 
+    int temp = *xp; 
+    *xp = *yp; 
+    *yp = temp; 
+} 
 
+// Bubble sort function
+void bubbleSort(int arr[], int n) 
+{ 
+   int i, j; 
+   bool swapped; 
+   for (i = 0; i < n-1; i++) 
+   { 
+     swapped = false; 
+     for (j = 0; j < n-i-1; j++) 
+     { 
+        if (arr[j] > arr[j+1]) 
+        { 
+           swap(&arr[j], &arr[j+1]); 
+           swapped = true; 
+        } 
+     } 
+  
+     // IF no two elements were swapped by inner loop, then break 
+     if (swapped == false) 
+        break; 
+   } 
+} 
 int main(int argc, char** argv){
  int j;
 
@@ -63,16 +91,60 @@ int main(int argc, char** argv){
   for(y = 0; y < Input.Height; y++){
    for(x = 0; x < Input.Width*Input.Components; x++){
     Output.Rows[y][x] = Input.Rows[y][x];
-    if(x%3==0 or x%2==0){
-        Output.Rows[y][x]=0;
-    } 
-    //printf("Pixels: %d \n", Input.Rows[y][x]);
+    // if(x%3==0){
+    //     Output.Rows[y][x]=0;
+    // }
+    // if(y==0 and x<10){
+    // printf("Pixels: %d \n", Input.Rows[y][x]);
+    // } 
    }
   }
   printf("Time = %lg ms\n", (double)toc()/1e-3);
  }
  printf("End of example code...\n\n");
  // End of example -------------------------------------------------------------
+
+ // Need to create arrays for the color value of a pixel and those surrounding it
+ // Pixel values outside the image boundary will be taken as 0
+ // Colour arrays initialised to zero
+int x, y;
+int red[9] = {0}; 
+int blue[9] = {0};
+int green[9] = {0};
+for(y = 0; y < Input.Height; y++){
+    for(x = 0; x < Input.Width*Input.Components; x++){
+        // example rows = [R,G,B,R,G,B,...,B]
+
+        // Check if current value is red
+        if(x%3==0){
+            // first check for edge cases
+            if(x<4){
+                if(y<1){
+                    // red[0]=0;
+                    // red[1]=0;
+                    // red[2]=0;
+                    // red[3]=0;
+                    red[4] = Input.Rows[y][x];
+                    red[5] = Input.Rows[y][x+3];
+                    // red[6] = 0;
+                    red[7] = Input.Rows[y+1][x];
+                    red[8] = Input.Rows[y+1][x+3];
+                }
+                else if (y==Input.Height-1)
+                {
+                    red[1] = Input.Rows[y-1][x];
+                    red[2] = Input.Rows[y-1][x+3];
+                    red[4] = Input.Rows[y][x];
+                    red[5] = Input.Rows[y][x+3];
+                }
+                
+            }
+        }
+        Output.Rows[y][x] = Input.Rows[y][x];
+
+   }
+ }
+ 
 
  // Spawn threads...
  int       Thread_ID[Thread_Count]; // Structure to keep the tread ID
