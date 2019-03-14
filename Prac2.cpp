@@ -19,21 +19,27 @@
 //==============================================================================
 
 #include "Prac2.h"
+
+//void bubblesort(JPEG out[6],int startInt, int split);
+void bubblesort(int startInt, int split);
+
 //------------------------------------------------------------------------------
 
 // This is each thread's "main" function.  It receives a unique ID
 void* Thread_Main(void* Parameter){
  int ID = *((int*)Parameter);
 
- pthread_mutex_lock(&Mutex);
-  printf("Hello from thread %d\n", ID);
- pthread_mutex_unlock(&Mutex);
+//  pthread_mutex_lock(&Mutex);
+//   printf("Hello from thread %d\n", ID);
+//  pthread_mutex_unlock(&Mutex);
 
- for(int j = 0; j < 1e6; j++); // Do some heavy calculation
+//  for(int j = 0; j < 1e6; j++); // Do some heavy calculation
 
- pthread_mutex_lock(&Mutex);
-  printf("Thread %d: I QUIT!\n", ID);
- pthread_mutex_unlock(&Mutex);
+//  pthread_mutex_lock(&Mutex);
+//   printf("Thread %d: I QUIT!\n", ID);
+//  pthread_mutex_unlock(&Mutex);
+
+ bubblesort(ID,Thread_Count);
 
  return 0;
 }
@@ -67,6 +73,7 @@ void bubbleSort(int arr[], int n)
         break; 
    } 
 } 
+
 int main(int argc, char** argv){
  int j;
 
@@ -83,38 +90,65 @@ int main(int argc, char** argv){
  // Allocated RAM for the output image
  if(!Output.Allocate(Input.Width, Input.Height, Input.Components)) return -2;
 
- // This is example code of how to copy image files ----------------------------
-//  printf("Start of example code...\n");
-//  for(j = 0; j < 10; j++){
-//   tic();
-//   int x, y;
-//   for(y = 0; y < Input.Height; y++){
-//    for(x = 0; x < Input.Width*Input.Components; x++){
-//     Output.Rows[y][x] = Input.Rows[y][x];
-//     // if(x%3==0){
-//     //     Output.Rows[y][x]=0;
-//     // }
-//     // if(y==0 and x<10){
-//     // printf("Pixels: %d \n", Input.Rows[y][x]);
-//     // } 
-//    }
-//   }
-//   printf("Time = %lg ms\n", (double)toc()/1e-3);
-//  }
-//  printf("End of example code...\n\n");
- // End of example -------------------------------------------------------------
-
  // Need to create arrays for the color value of a pixel and those surrounding it
  // Pixel values outside the image boundary will be taken as 0
  // Colour arrays initialised with zeros
 printf("Starting sequential sort\n");
-int x, y;
-int red[9] = {0}; 
-
-//int blue[9] = {0};
-//int green[9] = {0};
 tic();
-for(y = 0; y < Input.Height; y++){
+bubblesort(0,1);
+printf("Time of sequential sort = %lg ms\n\n", (double)toc()/1e-3);
+if(!Output.Write("Data/SeqOutput.jpg")){
+  printf("Cannot write image\n");
+  return -3;
+ }
+ // Spawn threads...
+ int       Thread_ID[Thread_Count]; // Structure to keep the tread ID
+ pthread_t Thread   [Thread_Count]; // pThreads structure for thread admin
+tic();
+ for(j = 0; j < Thread_Count; j++){
+  Thread_ID[j] = j;
+  pthread_create(Thread+j, 0, Thread_Main, Thread_ID+j);
+ }
+
+ // Printing stuff is a critical section...
+//  pthread_mutex_lock(&Mutex);
+//   printf("Threads created :-)\n");
+//  pthread_mutex_unlock(&Mutex);
+
+ //tic();
+ // Wait for threads to finish
+ for(j = 0; j < Thread_Count; j++){
+  if(pthread_join(Thread[j], 0)){
+   pthread_mutex_lock(&Mutex);
+    printf("Problem joining thread %d\n", j);
+   pthread_mutex_unlock(&Mutex);
+  }
+ }
+
+ // No more active threads, so no more critical sections required
+ printf("All threads have quit\n");
+ printf("Time taken for threads to run = %lg ms\n", toc()/1e-3);
+
+// Write the output image
+if(!Output.Write("Data/ThreadOutput.jpg")){
+  printf("Cannot write image\n");
+  return -3;
+ }
+
+ return 0;
+}
+
+void bubblesort(int startInt, int split){
+//out[0].Allocate(Input.Width, Input.Height, Input.Components);
+//Output2.Allocate(Input.Width, Input.Height/split, Input.Components);
+//JPEG Output2;
+//Output2.Allocate(Input.Width, Input.Height, Input.Components);
+int x, y;
+int red[9];
+int start = startInt*(ceil(Input.Height/split));
+int end = start + ceil(Input.Height/split);
+
+for(y = start; y < end; y++){
     for(x = 0; x < Input.Width*Input.Components; x++){
         //memset(red, 0, sizeof(red)); 
         for(int a=0; a < 10; a++){
@@ -203,49 +237,30 @@ for(y = 0; y < Input.Height; y++){
             red[7] = Input.Rows[y+1][x];
             red[8] = Input.Rows[y+1][x+3];
         }
+        // for(int z=0;z<10;z++){
+        //     printf(" %d ",red[z]);
+        // }
+        // printf("\n");
         bubbleSort(red, sizeof(red)/sizeof(red[0]));
-        Output.Rows[y][x] = red[4];
+        // for(int z=0;z<10;z++){
+        //     printf(" %d ",red[z]);
+        // }
+        // printf("\n");
+        //Output2.Rows[y][x] = red[4];
+	Output.Rows[y][x] = red[4];
     }
  }
- printf("Time = %lg ms\n\n", (double)toc()/1e-3);
- 
 
- // Spawn threads...
- int       Thread_ID[Thread_Count]; // Structure to keep the tread ID
- pthread_t Thread   [Thread_Count]; // pThreads structure for thread admin
+ //if(!Output2.Write("Data/Output2.jpg")){
+//if(!Output.Write("Data/Output2.jpg")){
+//  printf("Cannot write image\n");
+// }
 
- for(j = 0; j < Thread_Count; j++){
-  Thread_ID[j] = j;
-  pthread_create(Thread+j, 0, Thread_Main, Thread_ID+j);
- }
-
- // Printing stuff is a critical section...
- pthread_mutex_lock(&Mutex);
-  printf("Threads created :-)\n");
- pthread_mutex_unlock(&Mutex);
-
- tic();
- // Wait for threads to finish
- for(j = 0; j < Thread_Count; j++){
-  if(pthread_join(Thread[j], 0)){
-   pthread_mutex_lock(&Mutex);
-    printf("Problem joining thread %d\n", j);
-   pthread_mutex_unlock(&Mutex);
-  }
- }
-
- // No more active threads, so no more critical sections required
- printf("All threads have quit\n");
- printf("Time taken for threads to run = %lg ms\n", toc()/1e-3);
-
- // Write the output image
- if(!Output.Write("Data/Output.jpg")){
-  printf("Cannot write image\n");
-  return -3;
- }
-
- // Clean-up
- pthread_mutex_destroy(&Mutex);
- return 0;
 }
+
+
+
+
+
+
 //------------------------------------------------------------------------------
