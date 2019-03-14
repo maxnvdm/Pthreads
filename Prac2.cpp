@@ -29,16 +29,6 @@ void bubblesort(int startInt, int split);
 void* Thread_Main(void* Parameter){
  int ID = *((int*)Parameter);
 
-//  pthread_mutex_lock(&Mutex);
-//   printf("Hello from thread %d\n", ID);
-//  pthread_mutex_unlock(&Mutex);
-
-//  for(int j = 0; j < 1e6; j++); // Do some heavy calculation
-
-//  pthread_mutex_lock(&Mutex);
-//   printf("Thread %d: I QUIT!\n", ID);
-//  pthread_mutex_unlock(&Mutex);
-
  bubblesort(ID,Thread_Count);
 
  return 0;
@@ -93,15 +83,15 @@ int main(int argc, char** argv){
  // Need to create arrays for the color value of a pixel and those surrounding it
  // Pixel values outside the image boundary will be taken as 0
  // Colour arrays initialised with zeros
-printf("Starting sequential sort\n");
-tic();
-bubblesort(0,1);
-printf("Time of sequential sort = %lg ms\n\n", (double)toc()/1e-3);
-if(!Output.Write("Data/SeqOutput.jpg")){
-  printf("Cannot write image\n");
-  return -3;
- }
- // Spawn threads...
+// printf("Starting sequential sort\n");
+// tic();
+// bubblesort(0,1);
+// printf("Time of sequential sort = %lg ms\n\n", (double)toc()/1e-3);
+// if(!Output.Write("Data/SeqOutput.jpg")){
+//   printf("Cannot write image\n");
+//   return -3;
+//  }
+ //Spawn threads...
  int       Thread_ID[Thread_Count]; // Structure to keep the tread ID
  pthread_t Thread   [Thread_Count]; // pThreads structure for thread admin
 tic();
@@ -110,10 +100,7 @@ tic();
   pthread_create(Thread+j, 0, Thread_Main, Thread_ID+j);
  }
 
- // Printing stuff is a critical section...
-//  pthread_mutex_lock(&Mutex);
-//   printf("Threads created :-)\n");
-//  pthread_mutex_unlock(&Mutex);
+
 
  //tic();
  // Wait for threads to finish
@@ -125,11 +112,11 @@ tic();
   }
  }
 
- // No more active threads, so no more critical sections required
+ //No more active threads, so no more critical sections required
  printf("All threads have quit\n");
  printf("Time taken for threads to run = %lg ms\n", toc()/1e-3);
 
-// Write the output image
+//Write the output image
 if(!Output.Write("Data/ThreadOutput.jpg")){
   printf("Cannot write image\n");
   return -3;
@@ -144,16 +131,15 @@ void bubblesort(int startInt, int split){
 //JPEG Output2;
 //Output2.Allocate(Input.Width, Input.Height, Input.Components);
 int x, y;
-int red[9];
+int j, k;
 int start = startInt*(ceil(Input.Height/split));
 int end = start + ceil(Input.Height/split);
-
+int index;
 for(y = start; y < end; y++){
     for(x = 0; x < Input.Width*Input.Components; x++){
         //memset(red, 0, sizeof(red)); 
-        for(int a=0; a < 10; a++){
-            red[a]=0;
-        }
+        int red[81];
+        int k=0;
         //printf("x: %d y: %d \n", x,y);
         // Rxample row = [R,G,B,R,G,B,...,B]
         // Color arrays index corresponds to pixel and surrounding cells as follows: |0|1|2|
@@ -161,100 +147,34 @@ for(y = start; y < end; y++){
         //                                                                           |6|7|8|
         // First check for edge cases
         // Starting with left border
-        if(x<4){
-            // Check if we're on a corner pixel
-            if(y<1){
-                red[4] = Input.Rows[y][x];
-                red[5] = Input.Rows[y][x+3];
-                red[7] = Input.Rows[y+1][x];
-                red[8] = Input.Rows[y+1][x+3];
-            }
-            else if (y==Input.Height-1){
-                red[1] = Input.Rows[y-1][x];
-                red[2] = Input.Rows[y-1][x+3];
-                red[4] = Input.Rows[y][x];
-                red[5] = Input.Rows[y][x+3];
-            }
-            // Left border case
-            else{
-                red[1] = Input.Rows[y-1][x];
-                red[2] = Input.Rows[y-1][x+3];
-                red[4] = Input.Rows[y][x];
-                red[5] = Input.Rows[y][x+3];
-                red[7] = Input.Rows[y+1][x];
-                red[8] = Input.Rows[y+1][x+3];
-            }
-        }
-        // Check right border
-        else if (x>=Input.Width*Input.Components-3) {
-            if(y<1){
-                red[4] = Input.Rows[y][x];
-                red[3] = Input.Rows[y][x-3];
-                red[6] = Input.Rows[y+1][x-3];
-                red[7] = Input.Rows[y+1][x];
-            }
-            else if (y==Input.Height-1){
-                red[0] = Input.Rows[y-1][x-3];
-                red[1] = Input.Rows[y-1][x];
-                red[4] = Input.Rows[y][x];
-                red[3] = Input.Rows[y][x-3];
-            }
-            else{
-                red[0] = Input.Rows[y-1][x-3];
-                red[1] = Input.Rows[y-1][x];
-                red[4] = Input.Rows[y][x];
-                red[7] = Input.Rows[y+1][x];
-                red[3] = Input.Rows[y][x-3];
-                red[6] = Input.Rows[y+1][x-3];
-            }
-        }
-        else if (y==0) {
-            red[3] = Input.Rows[y][x-3];
-            red[4] = Input.Rows[y][x];
-            red[5] = Input.Rows[y][x+3];
-            red[6] = Input.Rows[y+1][x-3];
-            red[7] = Input.Rows[y+1][x];
-            red[8] = Input.Rows[y+1][x+3];
-        }
-        else if (y==Input.Height-1){
-            red[0] = Input.Rows[y-1][x-3];
-            red[1] = Input.Rows[y-1][x];
-            red[2] = Input.Rows[y-1][x+3];
-            red[4] = Input.Rows[y][x];
-            red[5] = Input.Rows[y][x+3];
-            red[3] = Input.Rows[y][x-3];
-            }
+        //index = 40;
+        //printf("x %d   y %d \n",x,y);
+        //red[index] = Input.Rows[y][x];
         
-        // Non-border case
-        else{
-            red[0] = Input.Rows[y-1][x-3];
-            red[1] = Input.Rows[y-1][x];
-            red[2] = Input.Rows[y-1][x+3];
-            red[3] = Input.Rows[y][x-3];
-            red[4] = Input.Rows[y][x];
-            red[5] = Input.Rows[y][x+3];
-            red[6] = Input.Rows[y+1][x-3];
-            red[7] = Input.Rows[y+1][x];
-            red[8] = Input.Rows[y+1][x+3];
-        }
-        // for(int z=0;z<10;z++){
-        //     printf(" %d ",red[z]);
-        // }
-        // printf("\n");
-        bubbleSort(red, sizeof(red)/sizeof(red[0]));
-        // for(int z=0;z<10;z++){
-        //     printf(" %d ",red[z]);
-        // }
-        // printf("\n");
-        //Output2.Rows[y][x] = red[4];
-	Output.Rows[y][x] = red[4];
+        for (int j = -4; j <= 4; j++) //4 down & up four from y
+            {
+                for (int i = (-4 * Input.Components); i <= (4 * Input.Components); i += 3, k++) //each 1 = 3
+                {
+
+                    if (((y + j) < 0) || ((y + j) >= (Input.Height)))
+                    {
+                        red[k] = 0;
+                    }
+                    else if (((x + i) < 0) || ((x + i) >= (Input.Components * Input.Width)))
+                    {
+                        red[k] = 0;
+                    }
+                    else
+                    {
+                        red[k] = Input.Rows[y + j][x + i];
+                    }
+                }
+            }
+    bubbleSort(red, sizeof(red)/sizeof(red[0]));
+	Output.Rows[y][x] = red[39];
     }
  }
 
- //if(!Output2.Write("Data/Output2.jpg")){
-//if(!Output.Write("Data/Output2.jpg")){
-//  printf("Cannot write image\n");
-// }
 
 }
 
