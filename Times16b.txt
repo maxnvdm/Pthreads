@@ -1,0 +1,4 @@
+Sequential Mean Execution Time:
+394946
+Mean Multi-Threaded Runtime: 
+222609
